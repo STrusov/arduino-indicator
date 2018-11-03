@@ -12,47 +12,73 @@ using namespace std::chrono;
 
 milliseconds tick = 500ms;
 
+const char* def_out_file = "/dev/ttyACM0";
+
 const char* temperature_file = "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp1_input";
 const char* fan_file = "/sys/devices/platform/nct6775.656/hwmon/hwmon2/fan1_input";
 
 const char* cpufreq_file = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
 
-int main() {
+int main(int n, char** c) {
 
     setlocale(LC_ALL,"");
 
+    ofstream out;
+    const char* out_file;
+    switch (n) {
+    default:
+        cerr << "Ддопустимо передать единственным аргументом имя файла для вывода."
+             << endl;
+        return -1;
+    case 1:
+        out_file = def_out_file;
+        break;
+    case 2:
+        out_file = c[1];
+        out.open(out_file);
+        if (!out) {
+            cerr << "Ошибка отрытия файла \"" << out_file << "\"." << endl;
+            return -1;
+        }
+    }
+
     for (unsigned step = 0; ; step = (step + 1) % 10) {
+
+        if (!out) {
+            out.close();
+            out.open(out_file);
+        }
 
         system_clock::time_point now = system_clock::now();
 
         time_t t = system_clock::to_time_t(now);
         char strtime[(16 + sizeof ("\n")) * sizeof(char32_t)];
         strftime(strtime, sizeof(strtime), "%H:%M:%S %a%d%b \n", localtime(&t));
-        cout << strtime << flush;
+        out << strtime << flush;
 
         if ( step > 6 ) {
             // Температура рапортуется в тысячных °C, три правые цифры незначащие
             unsigned temperature;
             ifstream(temperature_file) >> temperature;
-            cout.width(2);
-            cout << temperature / 1000 << char(1) << "C  ";
+            out.width(2);
+            out << temperature / 1000 << char(1) << "C  ";
 
             unsigned fan;
             ifstream(fan_file) >> fan;
-            cout.width(4);
-            cout << fan << "об/мин ";
+            out.width(4);
+            out << fan << "об/мин ";
 
-            cout << '\n' << flush;
+            out << '\n' << flush;
             this_thread::sleep_until(now + tick);
             continue;
         }
 
         unsigned cpufreq;
         ifstream(cpufreq_file) >> cpufreq;
-        cout.setf(ios_base::showpoint);
+        out.setf(ios_base::showpoint);
         double cf = cpufreq/1000000.0;
-        cout.precision(1 + (cf > 1.0));
-        cout << cf << "ГГц ";
+        out.precision(1 + (cf > 1.0));
+        out << cf << "ГГц ";
 
         ifstream meminfo("/proc/meminfo");
         // Вычисления схожи с утилитой free (см. sysinfo.c из procps-ng)
@@ -105,11 +131,11 @@ int main() {
         ssize_t ram_used  = mi[main_total].val - mi[main_free].val - 
                             mi[page_cache].val - mi[slab_reclaimable].val;
         ssize_t swap_used = mi[swap_total].val - mi[swap_free].val;
-        cout.width(4);
-        cout << (ram_used  + 512) / 1024 << '+' 
-             << (swap_used + 512) / 1024 << "МБ ";
+        out.width(4);
+        out << (ram_used  + 512) / 1024 << '+'
+            << (swap_used + 512) / 1024 << "МБ ";
 
-        cout << '\n' << flush;
+        out << '\n' << flush;
         this_thread::sleep_until(now + tick);
     }
 }
