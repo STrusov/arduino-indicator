@@ -2,6 +2,8 @@
 // экраном (англ. Liquid Crystal Display или просто LCD)
 #include <LiquidCrystalRus.h>
 
+#include <MsTimer2.h>
+
 // Объявляем объект, для управления дисплеем. Для его создания
 // необходимо указать номера пинов, к которым он подключен в
 // порядке:       RS   E DB5 DB6 DB7 DB8
@@ -17,6 +19,12 @@ byte degreeCelsius[8] = {
   B00000,
 };
 
+volatile unsigned ticks = 0;
+
+void tick() {
+  ++ticks;
+}
+
 void setup() {
   // начинаем работу с экраном. Сообщаем объекту количество
   // строк и столбцов. Опять же, вызывать pinMode не требуется:
@@ -29,35 +37,71 @@ void setup() {
 //  Serial.begin(115200);
   Serial.begin(9600);
   Serial.println("Ok");
+
+  MsTimer2::set(1000, tick);
+  MsTimer2::start();
 }
 
-String readln() {
-  String str;
+bool readln(String &str, unsigned timeout = 0) {
   char c;
+  if (timeout)
+    ticks = 0;
   while (true) {
-    while (!Serial.available()) {}
+    while (!Serial.available()) {
+      if (timeout && (ticks >= timeout))
+        return false;
+    }
     c = Serial.read();
-    if (c == '\n') return str;
+    if (c == '\n') {
+      MsTimer2::start();
+      return true;
+    }
     if (c == '\r') continue;
     str += c;
   }
 }
 
-void lcd_println16(const String& str) {
-  lcd.print(str);
-  for (size_t i = 16 - str.length(); i > 0; --i) {
-    lcd.print(' ');
+// Увеличивает 2х символов, представляющих время.
+// Возврашает признак переноса
+bool incstrtime(char *p, bool hours = false) {
+  if (hours && p[0] == '2' && p[1] == '3') {
+    p[0] = p[1] = '0';
+    return true;
+  }
+  if (p[1] < '9') {
+    p[1] += 1;
+    return false;
+  }
+  else {
+    p[1] = '0';
+    if (p[0] < '5') {
+      p[0] += 1;
+      return false;
+    }
+    p[0] = '0';
+    return true;
   }
 }
 
-void loop() 
-{
-  // устанавливаем курсор, колонку 0, строку 1. На деле — это
-  // левый квадрат 2-й строки, т.к. нумерация начинается с нуля
-  lcd.setCursor(0, 0);
-  lcd.print(readln());
+void loop() {
+  String line1("00:00:00");
+  while (true) {
+    String line, line2;
+    if (readln(line, 1) && readln(line2, 1))
+      line1 = line;
+    else {
+      line2 = "                ";
+      line1.remove(8, -1);
+      line1 += "        ";
+      incstrtime(&line1[6]) && incstrtime(&line1[3]) && incstrtime(&line1[0], true);
+    }
 
-  lcd.setCursor(0, 1);
-  lcd.print(readln());
+    // устанавливаем курсор, колонку 0, строку 1. На деле — это
+    // левый квадрат 2-й строки, т.к. нумерация начинается с нуля
+    lcd.setCursor(0, 0);
+    lcd.print(line1);
 
+    lcd.setCursor(0, 1);
+    lcd.print(line2);
+  }
 }
