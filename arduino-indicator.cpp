@@ -35,11 +35,12 @@ int main(int n, char** c) {
         break;
     case 2:
         out_file = c[1];
-        out.open(out_file);
-        if (!out) {
-            cerr << "Ошибка отрытия файла \"" << out_file << "\"." << endl;
-            return -1;
-        }
+    }
+
+    out.open(out_file);
+    if (!out) {
+        cerr << "Ошибка отрытия файла \"" << out_file << "\"." << endl;
+        return -1;
     }
 
     for (unsigned step = 0; ; step = (step + 1) % 10) {
