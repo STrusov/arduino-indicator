@@ -15,7 +15,7 @@ milliseconds tick = 500ms;
 const char* def_out_file = "/dev/ttyACM0";
 
 const char* temperature_file = "/sys/devices/platform/coretemp.0/hwmon/hwmon1/temp1_input";
-const char* fan_file = "/sys/devices/platform/nct6775.656/hwmon/hwmon2/fan1_input";
+const char* fan_file = "/sys/devices/platform/nct6775.656/hwmon/hwmon2/fan2_input";
 
 const char* cpufreq_file = "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq";
 
