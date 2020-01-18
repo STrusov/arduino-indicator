@@ -1,0 +1,11 @@
+[Unit]
+Description=Arduino indicator /dev/ttyACM%i
+BindsTo=dev-ttyACM%i.device
+After=dev-ttyACM%i.device
+
+[Service]
+Type=exec
+ExecStart=/usr/local/bin/arduino-indicator /dev/ttyACM%i
+
+[Install]
+WantedBy=sysinit.target
