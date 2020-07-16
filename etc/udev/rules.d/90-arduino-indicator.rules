@@ -1,1 +1,1 @@
-KERNEL=="ttyACM[0-9]*", ENV{ID_VENDOR_ID}="2341" TAG+="systemd", ENV{SYSTEMD_WANTS}="arduino-indicator@%n.service"
+KERNEL=="ttyACM[0-9]*", ENV{ID_VENDOR_ID}=="2341" TAG+="systemd", ENV{SYSTEMD_WANTS}="arduino-indicator@%n.service"
